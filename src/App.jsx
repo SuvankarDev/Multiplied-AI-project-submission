@@ -7,7 +7,7 @@ import {
 
 function App() {
   const [data, setData] = useState([]);
-  const [isAgentOpen, setIsAgentOpen] = useState(true);
+  const [isAgentOpen, setIsAgentOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -146,6 +146,16 @@ function App() {
         </div>
 
       </div>
+      {/* Floating Action Button (Shows only if agent is closed) */}
+      {!isAgentOpen && (
+        <button 
+          onClick={() => setIsAgentOpen(true)}
+          className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center text-2xl hover:bg-blue-700 transition-all hover:scale-110 z-40"
+        >
+          🤖
+        </button>
+      )}
+
       {/* Local Agent Sidebar */}
       {isAgentOpen && (
         <Agent 
@@ -156,84 +166,6 @@ function App() {
     </div>
   );
 }
-
-
-// function LocalDataAgent({ dataset, onClose }) {
-//   const [query, setQuery] = useState("");
-//   const [history, setHistory] = useState([]);
-
-//   // This is the "brain" of your agent - it processes the data locally
-//   const processQuery = (text) => {
-//     const q = text.toLowerCase();
-//     let response = "";
-
-//     if (q.includes("total") || q.includes("how many")) {
-//       response = `There are a total of ${dataset.length} recorded incidents in the database.`;
-//     } 
-//     else if (q.includes("highest severity") || q.includes("worst")) {
-//       const highSev = dataset.filter(i => i.severity_level >= 3).length;
-//       response = `I found ${highSev} critical incidents with a severity level of 3 or higher.`;
-//     } 
-//     else if (q.includes("project")) {
-//       const projects = [...new Set(dataset.map(i => i.job))];
-//       response = `Data is being tracked across ${projects.length} projects: ${projects.join(", ")}.`;
-//     } 
-//     else if (q.includes("common") || q.includes("category")) {
-//       const cats = dataset.reduce((acc, curr) => {
-//         const cat = curr.primary_category || "Uncategorized";
-//         acc[cat] = (acc[cat] || 0) + 1;
-//         return acc;
-//       }, {});
-//       const top = Object.entries(cats).sort((a,b) => b[1] - a[1])[0];
-//       response = `The most common incident category is "${top[0]}" with ${top[1]} occurrences.`;
-//     } 
-//     else {
-//       response = "I can help with totals, severity checks, project lists, and category analysis. Try asking 'What is the most common category?'";
-//     }
-
-//     setHistory([...history, { type: 'user', text }, { type: 'bot', text: response }]);
-//     setQuery("");
-//   };
-
-//   return (
-//     <div className="fixed inset-y-0 right-0 w-80 bg-white shadow-2xl border-l border-slate-200 flex flex-col z-50 overflow-hidden">
-//       <div className="p-4 bg-emerald-600 text-white flex justify-between items-center">
-//         <h2 className="font-bold uppercase text-xs tracking-widest">Local Data Agent</h2>
-//         <button onClick={onClose} className="hover:text-emerald-200">✕</button>
-//       </div>
-
-//       <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50">
-//         <div className="bg-white p-3 rounded border border-slate-200 text-xs text-slate-500 italic">
-//           Hello! I am a local agent. I process your data directly in the browser. No cloud, no cost.
-//         </div>
-        
-//         {history.map((msg, i) => (
-//           <div key={i} className={`p-3 rounded-lg text-sm shadow-sm ${msg.type === 'user' ? 'bg-emerald-100 ml-4' : 'bg-white mr-4 border'}`}>
-//             <p>{msg.text}</p>
-//           </div>
-//         ))}
-//       </div>
-
-//       <div className="p-4 border-t bg-white">
-//         <div className="flex gap-2">
-//           <input 
-//             className="flex-1 p-2 border rounded text-sm focus:outline-none focus:border-emerald-500"
-//             placeholder="Ask about projects, severity..."
-//             value={query}
-//             onChange={(e) => setQuery(e.target.value)}
-//             onKeyDown={(e) => e.key === 'Enter' && processQuery(query)}
-//           />
-//           <button 
-//             onClick={() => processQuery(query)}
-//             className="bg-emerald-600 text-white px-3 py-1 rounded text-sm font-bold"
-//           >
-//             GO
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
 
 function Agent({ dataset, onClose }) {
   const [input, setInput] = useState("");
@@ -278,13 +210,13 @@ function Agent({ dataset, onClose }) {
     setLoading(true);
 
     try {
-      const response = await fetch("https://temp.aistoryteller.workers.dev/gpt", {
+      const response = await fetch("/api/gpt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Exact format requested: {"input": "", "systemPrompt": ""}
         body: JSON.stringify({
           "input": input,
-          "systemPrompt": "none"
+          "systemPrompt": createSystemPrompt()
         }),
       });
 
